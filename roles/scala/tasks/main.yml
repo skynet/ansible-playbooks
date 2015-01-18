@@ -1,25 +1,16 @@
 ---
-- name: Create ansible-cache directory for downloading files to (if does not already exist)
-  command: mkdir /var/local/ansible-cache creates=/var/local/ansible-cache
+- name: Install | Download Scala
+  get_url: dest={{ansible_cache_dir}} url={{scala_download_location}}
   sudo: yes
-  tags: [ansible]
 
-- name: Download Scala {{scala_version}}
-  get_url: dest=/var/local/ansible-cache/ url=http://www.scala-lang.org/files/archive/scala-{{scala_version}}.tgz
+- name: Install | Extract Scala
+  shell: tar xzf {{ansible_cache_dir}}/{{scala_tarball}} -C {{software_install_dir}} creates={{software_install_dir}}/scala-{{scala_version}}
   sudo: yes
-  tags: [scala]
 
-- name: Extract Scala
-  shell: tar xzf /var/local/ansible-cache/scala-{{scala_version}}.tgz -C /usr/local/share creates=/usr/local/share/scala-{{scala_version}}
+- name: Configure | Add Scala executable symlinks to path
+  shell: for f in fsc scala scalac scaladoc scalap; do ln -s {{software_install_dir}}/scala-{{scala_version}}/bin/$f {{user_binaries}}/$f; done; creates={{user_binaries}}/scala
   sudo: yes
-  tags: [scala]
 
-- name: Add Scala executable symlinks to path
-  shell: for f in fsc scala scalac scaladoc scalap; do ln -s /usr/local/share/scala-{{scala_version}}/bin/$f /usr/local/bin/$f; done; creates=/usr/local/bin/scala
-  sudo: yes
-  tags: [scala]
-
-- name: Update Scala environment variables
+- name: Configure | Update Scala environment variables
   sudo: no
-  lineinfile: line="export SCALA_HOME=/usr/local/share/scala" dest="~/.bashrc" state=present regexp="export SCALA_HOME=/usr/local/share/scala"
-  tags: [scala]
+  lineinfile: line="export SCALA_HOME={{software_install_dir}}/scala-{{scala_version}}" dest="~/.bashrc" state=present regexp="export SCALA_HOME={{software_install_dir}}/scala-{{scala_version}}"
